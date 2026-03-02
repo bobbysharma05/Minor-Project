@@ -9,6 +9,7 @@
 #include <thread>
 #include <sstream>
 #include <fstream>
+#include <ctime>
 using namespace std;
 
 #define PORT "3490"
@@ -31,6 +32,14 @@ string mimeType(const string& path) {
     if (ext == ".json") return "application/json";
 
     return "application/octet-stream";
+}
+
+string get_http_date() {
+    time_t now = time(NULL);
+    struct tm tm = *gmtime(&now);
+    char buffer[128];
+    strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", &tm);
+    return string(buffer);
 }
 
 void handle_client(int* client_fd_ptr, string root_dir) {
@@ -135,6 +144,8 @@ void handle_client(int* client_fd_ptr, string root_dir) {
                 string mime = mimeType(path);
 
                 http_res = "HTTP/1.1 200 OK\r\n"
+                        "Server: Maulik-Bobby-Server/1.0\r\n"
+                        "Date: " + get_http_date() + "\r\n"
                         "Content-Type: " + mime + "\r\n"
                         "Content-Length: " + to_string(body.length()) + "\r\n"
                         "\r\n" + body;
@@ -173,6 +184,8 @@ void handle_client(int* client_fd_ptr, string root_dir) {
                 cout << "--------------------" << endl;
 
                 http_res = "HTTP/1.1 200 OK\r\n"
+                        "Server: Maulik-Bobby-Server/1.0\r\n"
+                        "Date: " + get_http_date() + "\r\n"
                         "Content-Type: text/plain\r\n"
                         "Content-Length: " + to_string(body_content.length()) + "\r\n"
                         "\r\n" + body_content;
@@ -180,6 +193,8 @@ void handle_client(int* client_fd_ptr, string root_dir) {
         }
         else { 
             http_res = "HTTP/1.1 404 Not Found\r\n"
+                    "Server: Maulik-Bobby-Server/1.0\r\n"
+                    "Date: " + get_http_date() + "\r\n"
                     "Content-Type: text/plain\r\n"
                     "Content-Length: 13\r\n"
                     "\r\n"
@@ -205,7 +220,8 @@ void* get_in_addr(struct sockaddr *sa) {
 
 int main(int argc, char* argv[]) {
 
-    string root_dir = argv[1];
+    string root_dir = ".";
+    if(argc > 1) root_dir = argv[1];
 
     struct addrinfo hints, *serverinfo, *p;
     int new_fd, sockfd;
